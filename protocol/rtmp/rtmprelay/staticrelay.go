@@ -3,11 +3,12 @@ package rtmprelay
 import (
 	"errors"
 	"fmt"
-	"github.com/gwuhaolin/livego/av"
-	"github.com/gwuhaolin/livego/configure"
-	"github.com/gwuhaolin/livego/protocol/rtmp/core"
 	"log"
 	"sync"
+
+	"github.com/timesking/livego/av"
+	"github.com/timesking/livego/configure"
+	"github.com/timesking/livego/protocol/rtmp/core"
 )
 
 type StaticPush struct {

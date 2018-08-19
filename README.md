@@ -20,7 +20,7 @@
 - [x] MP3
 
 ## 安装
-直接下载编译好的[二进制文件](https://github.com/gwuhaolin/livego/releases)后，在命令行中执行。
+直接下载编译好的[二进制文件](https://github.com/timesking/livego/releases)后，在命令行中执行。
 
 #### 从源码编译
 1. 下载源码 `git clone https://github.com/gwuhaolin/livego.git`
