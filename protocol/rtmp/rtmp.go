@@ -14,6 +14,7 @@ import (
 	"github.com/timesking/livego/av"
 	"github.com/timesking/livego/configure"
 	"github.com/timesking/livego/container/flv"
+	"github.com/timesking/livego/logs"
 	"github.com/timesking/livego/protocol/rtmp/core"
 	"github.com/timesking/livego/utils/uid"
 )
@@ -47,11 +48,11 @@ func (c *Client) Dial(url string, method string) error {
 	}
 	if method == av.PUBLISH {
 		writer := NewVirWriter(connClient)
-		log.Printf("client Dial call NewVirWriter url=%s, method=%s", url, method)
+		logs.Debug("client Dial call NewVirWriter url=%s, method=%s", url, method)
 		c.handler.HandleWriter(writer)
 	} else if method == av.PLAY {
 		reader := NewVirReader(connClient)
-		log.Printf("client Dial call NewVirReader url=%s, method=%s", url, method)
+		logs.Debug("client Dial call NewVirReader url=%s, method=%s", url, method)
 		c.handler.HandleReader(reader)
 		if c.getter != nil {
 			writer := c.getter.GetWriter(reader.Info())
@@ -116,28 +117,28 @@ func (s *Server) handleConn(conn *core.Conn) error {
 	if ret := configure.CheckAppName(appname); !ret {
 		err := errors.New("application name=%s is not configured")
 		conn.Close()
-		log.Println("CheckAppName err:", err)
+		logs.Error("CheckAppName err:", err)
 		return err
 	}
 
-	log.Printf("handleConn: IsPublisher=%v", connServer.IsPublisher())
+	logs.Debug("handleConn: IsPublisher=%v", connServer.IsPublisher())
 	if connServer.IsPublisher() {
 		if pushlist, ret := configure.GetStaticPushUrlList(appname); ret && (pushlist != nil) {
-			log.Printf("GetStaticPushUrlList: %v", pushlist)
+			logs.Info("GetStaticPushUrlList: %v", pushlist)
 		}
 		reader := NewVirReader(connServer)
 		s.handler.HandleReader(reader)
-		log.Printf("new publisher: %+v", reader.Info())
+		logs.Info("new publisher: %+v", reader.Info())
 
 		if s.getter != nil {
 			writeType := reflect.TypeOf(s.getter)
-			log.Printf("handleConn:writeType=%v", writeType)
+			logs.Info("handleConn:writeType=%v", writeType)
 			writer := s.getter.GetWriter(reader.Info())
 			s.handler.HandleWriter(writer)
 		}
 	} else {
 		writer := NewVirWriter(connServer)
-		log.Printf("new player: %+v", writer.Info())
+		logs.Info("new player: %+v", writer.Info())
 		s.handler.HandleWriter(writer)
 	}
 
@@ -231,7 +232,7 @@ func (v *VirWriter) Check() {
 }
 
 func (v *VirWriter) DropPacket(pktQue chan *av.Packet, info av.Info) {
-	log.Printf("[%v] packet queue max!!!", info)
+	logs.Warn("[%v] packet queue max!!!", info)
 	for i := 0; i < maxQueueNum-84; i++ {
 		tmpPkt, ok := <-pktQue
 		// try to don't drop audio
@@ -377,7 +378,7 @@ func (v *VirReader) SaveStatics(streamid uint32, length uint64, isVideoFlag bool
 	} else if (nowInMS - v.ReadBWInfo.LastTimestamp) >= SAVE_STATICS_INTERVAL {
 		diffTimestamp := (nowInMS - v.ReadBWInfo.LastTimestamp) / 1000
 
-		//log.Printf("now=%d, last=%d, diff=%d", nowInMS, v.ReadBWInfo.LastTimestamp, diffTimestamp)
+		//logs.Debug("now=%d, last=%d, diff=%d", nowInMS, v.ReadBWInfo.LastTimestamp, diffTimestamp)
 		v.ReadBWInfo.VideoSpeedInBytesperMS = (v.ReadBWInfo.VideoDatainBytes - v.ReadBWInfo.LastVideoDatainBytes) * 8 / uint64(diffTimestamp) / 1000
 		v.ReadBWInfo.AudioSpeedInBytesperMS = (v.ReadBWInfo.AudioDatainBytes - v.ReadBWInfo.LastAudioDatainBytes) * 8 / uint64(diffTimestamp) / 1000
 
