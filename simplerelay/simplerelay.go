@@ -12,12 +12,13 @@ import (
 )
 
 var (
-	version      = "master"
-	logger       *zap.Logger
-	zaplog       *zap.SugaredLogger
-	done         chan bool
-	rtmpPullAddr = flag.String("rtmp-source-addr", "rtmp://127.0.0.1:1935", "RTMP server source/pull from")
-	rtmpPushAddr = flag.String("rtmp-dest-addr", "rtmp://xxx.xxx.xxx.xxx", "RTMP server dest/push to")
+	version          = "master"
+	logger           *zap.Logger
+	zaplog           *zap.SugaredLogger
+	done             chan bool
+	rtmpPullAddr     = flag.String("rtmp-source-addr", "rtmp://127.0.0.1:1935", "RTMP server source/pull from")
+	rtmpPushAddr     = flag.String("rtmp-dest-addr", "rtmp://xxx.xxx.xxx.xxx", "RTMP server dest/push to")
+	rtmpPushIPRelace = flag.String("rtmp-dest-ip", "", "RTMP server ip assigned manually")
 )
 
 func init() {
@@ -46,6 +47,13 @@ func main() {
 	pushRtmprelay := rtmprelay.NewRtmpRelay(&localurl, &remoteurl)
 	pushRtmprelay.LogInfo = zaplog.Infof
 	pushRtmprelay.ErrorInfo = zaplog.Errorf
+	pushRtmprelay.WarnInfo = zaplog.Warnf
+
+	if rtmpPushIPRelace != nil && len(*rtmpPushIPRelace) != 0 {
+		pushRtmprelay.DNSLookup = func(host string) (string, error) {
+			return *rtmpPushIPRelace, nil
+		}
+	}
 
 	zaplog.Info("rtmprelay start push %s from %s", remoteurl, localurl)
 	err := pushRtmprelay.StartWait(ctx)

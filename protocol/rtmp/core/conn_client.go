@@ -9,6 +9,7 @@ import (
 	"net"
 	neturl "net/url"
 	"strings"
+	"time"
 
 	"log"
 
@@ -53,6 +54,10 @@ func NewConnClient() *ConnClient {
 		encoder: &amf.Encoder{},
 		decoder: &amf.Decoder{},
 	}
+}
+
+func (connClient *ConnClient) SetReadDeadline(t time.Time) {
+	connClient.conn.SetDeadline(t)
 }
 
 func (connClient *ConnClient) DecodeBatch(r io.Reader, ver amf.Version) (ret []interface{}, err error) {
@@ -209,7 +214,30 @@ func (connClient *ConnClient) writePlayMsg() error {
 	return connClient.readRespMsg()
 }
 
+func (connClient *ConnClient) StartWithDNSLookup(url string, method string, dnslookup func(host string) (string, error)) error {
+	if dnslookup == nil {
+		return connClient.start(url, method, DNSLookup)
+	} else {
+		return connClient.start(url, method, dnslookup)
+	}
+}
+
 func (connClient *ConnClient) Start(url string, method string) error {
+	return connClient.start(url, method, DNSLookup)
+}
+
+func DNSLookup(host string) (string, error) {
+	ips, err := net.LookupIP(host)
+	log.Printf("ips: %v, host: %v", ips, host)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	remoteIP := ips[rand.Intn(len(ips))].String()
+	return remoteIP, nil
+}
+
+func (connClient *ConnClient) start(url string, method string, dnslookup func(host string) (string, error)) error {
 	u, err := neturl.Parse(url)
 	if err != nil {
 		return err
@@ -235,13 +263,13 @@ func (connClient *ConnClient) Start(url string, method string) error {
 		}
 		port = ":" + port
 	}
-	ips, err := net.LookupIP(host)
-	log.Printf("ips: %v, host: %v", ips, host)
+
+	remoteIP, err = dnslookup(host)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	remoteIP = ips[rand.Intn(len(ips))].String()
+
 	if strings.Index(remoteIP, ":") == -1 {
 		remoteIP += port
 	}
@@ -265,7 +293,7 @@ func (connClient *ConnClient) Start(url string, method string) error {
 
 	log.Println("connection:", "local:", conn.LocalAddr(), "remote:", conn.RemoteAddr())
 
-	connClient.conn = NewConn(conn, 4*1024)
+	connClient.conn = NewConn(conn, 1024)
 
 	log.Println("HandshakeClient....")
 	if err := connClient.conn.HandshakeClient(); err != nil {
