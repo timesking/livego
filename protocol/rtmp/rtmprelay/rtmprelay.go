@@ -109,7 +109,7 @@ loop:
 			//logs.Debug("sendPublishChunkStream: rc.TypeID=%v length=%d", rc.TypeID, len(rc.Data))
 			self.connectPublishClient.SetReadDeadline(time.Now().Add(time.Second * 5))
 			if err := self.connectPublishClient.Write(rc); err != nil {
-				if err, ok := err.(net.Error); ok && err.Timeout() {
+				if err, ok := err.(net.Error); ok /*&& err.Timeout()*/ {
 					self.LastError = err
 					break loop
 				}
