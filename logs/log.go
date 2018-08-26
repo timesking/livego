@@ -2,6 +2,8 @@ package logs
 
 import (
 	"log"
+
+	"go.uber.org/zap"
 )
 
 type Logger interface {
@@ -43,14 +45,26 @@ func (*DefaultLoger) Faltal(format string, v ...interface{}) {
 var (
 	_log        Logger
 	_defaultLog DefaultLoger
+	_zapBuilder func(options ...zap.Option) *zap.Logger
+	IsZapReady  bool
 )
 
 func init() {
 	_log = &_defaultLog
+	IsZapReady = false
 }
 
 func SetLoger(l Logger) {
 	_log = l
+}
+
+func SetZapLogerBuilder(buildZap func(options ...zap.Option) *zap.Logger) {
+	_zapBuilder = buildZap
+	IsZapReady = true
+}
+
+func GetZapLoger(name string, options ...zap.Option) *zap.Logger {
+	return _zapBuilder(options...).Named(name)
 }
 
 func Trace(format string, v ...interface{}) {

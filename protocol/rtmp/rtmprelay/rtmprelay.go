@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/timesking/livego/logs"
 	"github.com/timesking/livego/protocol/amf"
 	"github.com/timesking/livego/protocol/rtmp/core"
@@ -45,6 +47,11 @@ func (self *RtmpRelay) metrics(ctx context.Context) {
 	defer ticker.Stop()
 	var rLast, wLast uint64
 	var publishReadLast, publishWriteLast uint64
+	var zaploger *zap.Logger
+	if logs.IsZapReady {
+		zaploger = logs.GetZapLoger("metrics").With(zap.String("metrics", "second"))
+	}
+
 loop:
 	for {
 		select {
@@ -61,10 +68,18 @@ loop:
 			publishReadBytes := publishReadCur - publishReadLast
 			publishWriteBytes := publishWriteCur - publishWriteLast
 
-			logs.Info("bps: play(r:%d, w:%d), publish(r:%d, w:%d)",
-				rBytes*8, wBytes*8,
-				publishReadBytes*8, publishWriteBytes*8,
-			)
+			if zaploger != nil {
+				zaploger.Info("bps",
+					zap.Uint64("r", rBytes*8+publishReadBytes*8),
+					zap.Uint64("w", wBytes*8+publishWriteBytes*8),
+				)
+			} else {
+				logs.Info("bps: play(r:%d, w:%d), publish(r:%d, w:%d)",
+					rBytes*8, wBytes*8,
+					publishReadBytes*8, publishWriteBytes*8,
+				)
+			}
+
 			rLast, wLast = rCur, wCur
 			publishReadLast, publishWriteLast = publishReadCur, publishWriteCur
 		}

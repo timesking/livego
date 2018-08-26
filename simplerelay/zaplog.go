@@ -12,46 +12,58 @@ var (
 )
 
 type ZapLoger struct {
+	L *zap.Logger
+	S *zap.SugaredLogger
 }
 
-func (*ZapLoger) Trace(format string, v ...interface{}) {
-	if zaplog != nil {
-		zaplog.Debugf(format, v...)
+func NewRelayLoger() *ZapLoger {
+	newLoger := logger.WithOptions(zap.AddCallerSkip(2)).Named("RelayLoger")
+	z := &ZapLoger{
+		L: newLoger,
+		S: newLoger.Sugar(),
+	}
+
+	return z
+}
+
+func (z *ZapLoger) Trace(format string, v ...interface{}) {
+	if z != nil {
+		z.S.Debugf(format, v...)
 	} else {
 		log.Printf(format, v...)
 	}
 }
-func (*ZapLoger) Debug(format string, v ...interface{}) {
-	if zaplog != nil {
-		zaplog.Debugf(format, v...)
+func (z *ZapLoger) Debug(format string, v ...interface{}) {
+	if z != nil {
+		z.S.Debugf(format, v...)
 	} else {
 		log.Printf(format, v...)
 	}
 }
-func (*ZapLoger) Info(format string, v ...interface{}) {
-	if zaplog != nil {
-		zaplog.Infof(format, v...)
+func (z *ZapLoger) Info(format string, v ...interface{}) {
+	if z != nil {
+		z.S.Infof(format, v...)
 	} else {
 		log.Printf(format, v...)
 	}
 }
-func (*ZapLoger) Warn(format string, v ...interface{}) {
-	if zaplog != nil {
-		zaplog.Warnf(format, v...)
+func (z *ZapLoger) Warn(format string, v ...interface{}) {
+	if z != nil {
+		z.S.Warnf(format, v...)
 	} else {
 		log.Printf(format, v...)
 	}
 }
-func (*ZapLoger) Error(format string, v ...interface{}) {
-	if zaplog != nil {
-		zaplog.Errorf(format, v...)
+func (z *ZapLoger) Error(format string, v ...interface{}) {
+	if z != nil {
+		z.S.Errorf(format, v...)
 	} else {
 		log.Printf(format, v...)
 	}
 }
-func (*ZapLoger) Faltal(format string, v ...interface{}) {
-	if zaplog != nil {
-		zaplog.Fatalf(format, v...)
+func (z *ZapLoger) Faltal(format string, v ...interface{}) {
+	if z != nil {
+		z.S.Fatalf(format, v...)
 	} else {
 		log.Printf(format, v...)
 	}

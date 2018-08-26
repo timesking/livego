@@ -27,6 +27,7 @@ func init() {
 
 func main() {
 	logger, _ = zap.NewProduction()
+	logger = logger.Named("main")
 	defer logger.Sync()
 	zaplog = logger.Sugar()
 	zaplog.Info("simple relay rtmp:", version)
@@ -42,7 +43,10 @@ func main() {
 		<-sigs
 		cancel()
 	}()
-	logs.SetLoger(&ZapLoger{})
+	logs.SetLoger(NewRelayLoger())
+	logs.SetZapLogerBuilder(func(options ...zap.Option) *zap.Logger {
+		return logger.WithOptions(options...)
+	})
 	pushRtmprelay := rtmprelay.NewRtmpRelay(&localurl, &remoteurl)
 
 	if rtmpPushIPRelace != nil && len(*rtmpPushIPRelace) != 0 {
