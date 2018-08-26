@@ -45,6 +45,10 @@ func NewConn(c net.Conn, bufferSize int) *Conn {
 	}
 }
 
+func (conn *Conn) GetBytesCounter() (uint64, uint64) {
+	return conn.rw.GetBytesCounter()
+}
+
 func (conn *Conn) Read(c *ChunkStream) error {
 	for {
 		h, _ := conn.rw.ReadUintBE(1)

@@ -40,6 +40,37 @@ func NewRtmpRelay(playurl *string, publishurl *string) *RtmpRelay {
 	}
 }
 
+func (self *RtmpRelay) metrics(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	var rLast, wLast uint64
+	var publishReadLast, publishWriteLast uint64
+loop:
+	for {
+		select {
+		case <-ctx.Done():
+			break loop
+		case <-self.stopChan:
+			break loop
+		case <-ticker.C:
+			rCur, wCur := self.connectPlayClient.GetBytesCounter()
+			rBytes := rCur - rLast
+			wBytes := wCur - wLast
+
+			publishReadCur, publishWriteCur := self.connectPublishClient.GetBytesCounter()
+			publishReadBytes := publishReadCur - publishReadLast
+			publishWriteBytes := publishWriteCur - publishWriteLast
+
+			logs.Info("bps: play(r:%d, w:%d), publish(r:%d, w:%d)",
+				rBytes*8, wBytes*8,
+				publishReadBytes*8, publishWriteBytes*8,
+			)
+			rLast, wLast = rCur, wCur
+			publishReadLast, publishWriteLast = publishReadCur, publishWriteCur
+		}
+	}
+}
+
 //TODO: ctrl-c not work when source connection is good
 func (self *RtmpRelay) rcvPlayChunkStream(ctx context.Context) {
 	defer self.Stop()
@@ -161,6 +192,11 @@ func (self *RtmpRelay) StartWait(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		self.sendPublishChunkStream(ctx)
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		self.metrics(ctx)
 	}()
 
 	wg.Wait()

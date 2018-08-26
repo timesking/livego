@@ -55,6 +55,10 @@ func NewConnClient() *ConnClient {
 	}
 }
 
+func (connClient *ConnClient) GetBytesCounter() (uint64, uint64) {
+	return connClient.conn.GetBytesCounter()
+}
+
 func (connClient *ConnClient) SetReadDeadline(t time.Time) {
 	connClient.conn.SetDeadline(t)
 }
